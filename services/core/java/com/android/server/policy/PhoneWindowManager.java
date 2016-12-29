@@ -907,6 +907,18 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     Settings.System.ACCELEROMETER_ROTATION_ANGLES), false, this,
                     UserHandle.USER_ALL);
             resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.NAVIGATION_BAR_HEIGHT), false, this,
+                    UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.NAVIGATION_BAR_HEIGHT_LANDSCAPE), false, this,
+                    UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.NAVIGATION_BAR_WIDTH), false, this,
+                    UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.NAVIGATION_BAR_SHOW), false, this,
+                    UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.VOLUME_WAKE_SCREEN), false, this,
                     UserHandle.USER_ALL);
             resolver.registerContentObserver(Settings.System.getUriFor(
@@ -2032,7 +2044,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         // Allow the navigation bar to move on non-square small devices (phones).
         mNavigationBarCanMove = width != height && shortSizeDp < 600;
 
-        mHasNavigationBar = res.getBoolean(com.android.internal.R.bool.config_showNavigationBar);
+        final int showByDefault = mContext.getResources().getBoolean(
+                    com.android.internal.R.bool.config_showNavigationBar) ? 1 : 0;
+        mHasNavigationBar = ettings.System.getIntForUser(mContext.getContentResolver(),
+                    Settings.System.NAVIGATION_BAR_SHOW, showByDefault,
+                    UserHandle.USER_CURRENT) == 1;
 
         // Allow a system property to override this. Used by the emulator.
         // See also hasNavigationBar().
@@ -2143,6 +2159,43 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             mUserRotationAngles = Settings.System.getIntForUser(resolver,
                     Settings.System.ACCELEROMETER_ROTATION_ANGLES, -1,
                     UserHandle.USER_CURRENT);
+
+            final int showByDefault = mContext.getResources().getBoolean(
+                    com.android.internal.R.bool.config_showNavigationBar) ? 1 : 0;
+            mHasNavigationBar = Settings.System.getIntForUser(resolver,
+                    Settings.System.NAVIGATION_BAR_SHOW, showByDefault,
+                    UserHandle.USER_CURRENT) == 1;
+
+            // Height of the navigation bar when presented horizontally at bottom
+            mNavigationBarHeightForRotationDefault[mPortraitRotation] =
+            mNavigationBarHeightForRotationDefault[mUpsideDownRotation] =
+                    Settings.System.getIntForUser(
+                        mContext.getContentResolver(), Settings.System.NAVIGATION_BAR_HEIGHT,
+                        mContext.getResources().getDimensionPixelSize(
+                        com.android.internal.R.dimen.navigation_bar_height),
+                        UserHandle.USER_CURRENT);
+            mNavigationBarHeightForRotationDefault[mLandscapeRotation] =
+            mNavigationBarHeightForRotationDefault[mSeascapeRotation] =
+                    Settings.System.getIntForUser(
+                        mContext.getContentResolver(),
+                        Settings.System.NAVIGATION_BAR_HEIGHT_LANDSCAPE,
+                        mContext.getResources()
+                                .getDimensionPixelSize(
+                                    com.android.internal.R.dimen.navigation_bar_height_landscape),
+                        UserHandle.USER_CURRENT);
+
+            // Width of the navigation bar when presented vertically along one side
+            mNavigationBarWidthForRotationDefault[mPortraitRotation] =
+            mNavigationBarWidthForRotationDefault[mUpsideDownRotation] =
+            mNavigationBarWidthForRotationDefault[mLandscapeRotation] =
+            mNavigationBarWidthForRotationDefault[mSeascapeRotation] =
+                    Settings.System.getIntForUser(
+                        mContext.getContentResolver(),
+                        Settings.System.NAVIGATION_BAR_WIDTH,
+                        mContext.getResources()
+                                .getDimensionPixelSize(
+                                    com.android.internal.R.dimen.navigation_bar_width),
+                        UserHandle.USER_CURRENT);
 
             if (mSystemReady) {
                 int pointerLocation = Settings.System.getIntForUser(resolver,
@@ -2539,6 +2592,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     res.getDimensionPixelSize(
                             com.android.internal.R.dimen.navigation_bar_width_car_mode);
         }
+        updateSettings();
     }
 
     /** {@inheritDoc} */
